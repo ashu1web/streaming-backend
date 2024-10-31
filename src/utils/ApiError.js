@@ -12,6 +12,6 @@ class ApiError extends Error{
         this.success=false
         this.errors=errors
     }
-}
+} 
 
 export {ApiError} 
