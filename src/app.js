@@ -14,9 +14,14 @@ app.use(express.urlencoded({extended:true,limit:"16kb"})) //url data
 app.use(express.static("public"))                         //to store public data like image
 app.use(cookieParser())                                   //My server can change user's broswer cookie through cookie parser
 
+//routes import 
+import userRouter from './routes/user.routes.js'
+
+//routes declaration
+app.use("/api/v1/users",userRouter)
 
 
-export {app}
+export  {app}
 
 
 //app is an object of expres and its app.use() is used for configuration and middleware
