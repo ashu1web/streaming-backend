@@ -5,21 +5,29 @@ import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import {ApiResponse}  from "../utils/ApiResponse.js"
 import mongoose from "mongoose";
 
-const generateAccessAndRefreshToken=async(userID)=>{
-    try{
-       const user=User.findById(userID)
-       const access=user.generateAccessToken()
-       const refresh=user.generateRefreshToken()
+const generateAccessAndRefreshToken = async (userID) => {
+    try {
+        // Remove .lean() to keep Mongoose document methods
+        const user = await User.findById(userID);
+        if (!user) {
+            throw new ApiError(404, "User not found");
+        }
 
-       user.refreshToken=refresh  //refreshtoken saved in db
-       await user.save({validateBeforeSave:false})
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
 
-       return {access,refresh}
+        user.refreshToken = refreshToken; // Save refresh token in DB
+        await user.save({ validateBeforeSave: false });
 
-    }catch(error){
-        throw new ApiError(500,"Something went wrong while generating Tokens")
+        return { accessToken, refreshToken };
+
+    } catch (error) {
+        console.error("Error in generateAccessAndRefreshToken:", error);  // Log the exact error
+        throw new ApiError(500, "Something went wrong while generating Tokens");
     }
-}
+};
+
+
 
 const registerUser = asyncHandler( async (req, res) => {
     // get user details from frontend
@@ -98,64 +106,65 @@ const registerUser = asyncHandler( async (req, res) => {
 
 } )
 
-const loginUser=asyncHandler(async(req,res)=>{
+const loginUser = asyncHandler(async (req, res) => {
      //req body->data
      //username or email
      //find the user
      //password check
      //access and refresh token
      //send cookie
-
-       
+     
     const trimmedBody = Object.fromEntries(
         Object.entries(req.body).map(([key, value]) => [key.trim(), value])
     );
-    
-    const {email, username } = trimmedBody;
 
-    if(!email && !username){
-        throw new ApiError(400,"username or email is required")
+    const { email, username, password } = trimmedBody;
+
+    if (!email && !username) {
+        throw new ApiError(400, "Username or email is required");
     }
 
-    const user=await User.findOne({
-        $or:[{username},{email}]
-    })
+    const user = await User.findOne({
+        $or: [{ username }, { email }]
+    });
 
-    if(!user){
-        throw new ApiError(404,"User not exist")
+    if (!user) {
+        throw new ApiError(404, "User not exist");
     }
 
-    const isPasswordValid=await user.isPasswordCorrect(password)
+    const isPasswordValid = await user.isPasswordCorrect(password);
 
-    if(!isPasswordValid){
-        throw new ApiError(404,"Invalid user credentials")
+    if (!isPasswordValid) {
+        throw new ApiError(404, "Invalid user credentials");
     }
 
-   const {accessToken,refreshToken}=await 
-   generateAccessAndRefreshToken(user._id)
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-   const loggedUser=User.findById(user._id).
-   select("--password --refereshToken")
+    // Retrieve the user data without sensitive fields and convert it to a plain object
+    const loggedUser = await User.findById(user._id).select("-password -refreshToken").lean();
 
-   const options={              //cookies
-     httpOnly:true,
-     secure:true
-   }
-   
+    const options = {
+        httpOnly: true,
+        secure: true
+    };
+
     return res
-    .status(200)
-    .cookie("accessToken",accessToken,options)
-    .cookie("refreshToken",refreshToken,options)
-    .json(
-        new ApiResponse(
-            200,
-            {
-                user:loggedUser,accessToken,refreshToken
-            },
-            "User logged In Successfully"
-        )
-    )
-})
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user: loggedUser,
+                    accessToken,
+                    refreshToken
+                },
+                "User logged in successfully"
+            )
+        );
+});
+
 
 const logoutUser=asyncHandler(async(req,res)=>{
     await User.findByIdAndUpdate(
@@ -187,3 +196,15 @@ export {
     loginUser,
     logoutUser
 }
+
+
+
+
+/*
+Solution
+In the fix, we used .lean() on User.findById:
+
+.lean(): This method tells Mongoose to return a plain JavaScript object instead of a Mongoose document, removing the extra internal properties that caused circular references. By converting the document to a plain object, Express can safely serialize it to JSON for the response without running into circular references.
+So, in essence, the problem was that res.json() couldn't handle the Mongoose document's complex internal structure, and the solution was to convert it to a simple object using .lean().
+})                        lean() method
+ */
