@@ -12,7 +12,7 @@ app.use(cors({
 app.use(express.json({limit:"16kb"}))                     //limit of json data
 app.use(express.urlencoded({extended:true,limit:"16kb"})) //url data
 app.use(express.static("public"))                         //to store public data like image
-app.use(cookieParser())                                   //My server can change user's broswer cookie through cookie parser
+app.use(cookieParser())                                   //Req,res have cookie access,My server can change user's broswer cookie through cookie parser
 
 //routes import 
 import userRouter from './routes/user.routes.js'
