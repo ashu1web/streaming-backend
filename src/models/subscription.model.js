@@ -9,7 +9,7 @@ const subscriptionSchema=new Schema({
         type:Schema.Types.ObjectId,    //channel info
         ref:User
     }
-})
+},{timestamps:true})
 
 export coonst Subscription=mongoose.model("Subscription",
     subscriptionSchema
