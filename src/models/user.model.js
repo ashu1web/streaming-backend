@@ -98,3 +98,5 @@ userSchema.methods.generateRefreshToken = function() {
 
 
 export const User=mongoose.model("User",userSchema)
+
+//User is the database and user are the entries whcih we are finding by methoods like User.findById(user_.id)
