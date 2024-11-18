@@ -4,6 +4,8 @@ import {User} from "../models/user.model.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import {ApiResponse}  from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
+
 
 const generateAccessAndRefreshToken = async (userID) => {
     try {
@@ -364,7 +366,7 @@ const getUserChannelProfile=asyncHandler(async(req,res)=>{
         throw new ApiError(400,"username is missing")
     }
 
-    const channel=await User.aggregate([
+    const channel=await User.aggregate([    //we have added two more fields in user document subscribers and subscribedTo
         {
             $match:{
                 username:username?.toLowerCase()
@@ -429,6 +431,61 @@ const getUserChannelProfile=asyncHandler(async(req,res)=>{
 })
 
 
+const getWatchHistory = asyncHandler(async(req, res) => {
+    const user = await User.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(req.user._id)
+            }
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields:{
+                            owner:{
+                                $first: "$owner"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ])
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            user[0].watchHistory,
+            "Watch history fetched successfully"
+        )
+    )
+})
+
+
 
 export {
     registerUser,
@@ -440,10 +497,31 @@ export {
     updateAccountDetails,
     updateUserCoverImage,
     updateUserAvatar,
-    getUserChannelProfile
+    getUserChannelProfile,
+    getWatchHistory
 }
 
 
+
+/*
+Output of channel
+[
+    {
+        fullName: 'John Doe',
+        username: 'johndoe',
+        subscribersCount: 2,
+        subscribedTo: [
+            { channel: ObjectId("channel2"), subscriber: ObjectId("user1") },
+            { channel: ObjectId("channel3"), subscriber: ObjectId("user1") }
+        ],
+        email: 'johndoe@example.com',
+        coverImage: '/path/to/cover.jpg',
+        avatar: '/path/to/avatar.jpg',
+        issubcribed: true
+    }
+]
+
+*/
 
 
 /*
