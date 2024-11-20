@@ -525,6 +525,75 @@ Output of channel
 
 
 /*
+output for user
+[
+  {
+    "_id": "user123",
+    "watchHistory": [
+      {
+        "_id": "64f5a3c41234567890abcdef",
+        "title": "Learning MongoDB",
+        "description": "A guide to MongoDB basics",
+        "thumbnail": "mongo-thumbnail.jpg",
+        "owner": {
+          "fullName": "John Doe",
+          "username": "johndoe",
+          "avatar": "avatar-john.jpg"
+        }
+      },
+      {
+        "_id": "64f5a3c51234567890abcdef",
+        "title": "React Tutorial",
+        "description": "Learn React step by step",
+        "thumbnail": "react-thumbnail.jpg",
+        "owner": {
+          "fullName": "Jane Smith",
+          "username": "janesmith",
+          "avatar": "avatar-jane.jpg"
+        }
+      }
+    ]
+  }
+]
+
+
+
+output for user[0].watchhistory
+
+{
+  "status": 200,
+  "data": [
+    {
+      "_id": "64f5a3c41234567890abcdef",
+      "title": "Learning MongoDB",
+      "description": "A guide to MongoDB basics",
+      "thumbnail": "mongo-thumbnail.jpg",
+      "owner": {
+        "fullName": "John Doe",
+        "username": "johndoe",
+        "avatar": "avatar-john.jpg"
+      }
+    },
+    {
+      "_id": "64f5a3c51234567890abcdef",
+      "title": "React Tutorial",
+      "description": "Learn React step by step",
+      "thumbnail": "react-thumbnail.jpg",
+      "owner": {
+        "fullName": "Jane Smith",
+        "username": "janesmith",
+        "avatar": "avatar-jane.jpg"
+      }
+    }
+  ],
+  "message": "Watch history fetched successfully"
+}
+
+
+*/
+
+
+/*
 Solution
 In the fix, we used .lean() on User.findById:
 
