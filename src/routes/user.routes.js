@@ -17,6 +17,25 @@ router.route("/register").post(upload.fields([       //middleware upload  and ro
     }
 ]),
 registerUser)
+/*
+router.route("/register")
+  .post((req, res, next) => {
+    console.log("Request Body:", req.body);  // Check if fields are received
+    console.log("Request Files:", req.files);  // Check if files are in the request
+    console.log("Request Headers:", req.headers);  // Check if the content type is set correctly
+    next();
+  },
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "coverImage", maxCount: 1 }
+  ]),
+  (req, res, next) => {
+    console.log("After Multer middleware");  // Log after Multer middleware
+    next();
+  },
+  registerUser);  // Controller function
+*/
+
 
 router.route("/login").post(loginUser)
 

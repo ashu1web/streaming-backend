@@ -11,10 +11,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     if(!videoId){
         throw new ApiError(400,"Video not available")
     }
-    
-    
 
- 
 })
 
 const toggleCommentLike = asyncHandler(async (req, res) => {

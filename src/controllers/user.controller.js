@@ -60,8 +60,12 @@ const registerUser = asyncHandler( async (req, res) => {
     if (existedUser) {
         throw new ApiError(409, "User with email or username already exists")
     }
-    //console.log(req.files);
+    //console.log(req.files);  files access bcoz of multer
 
+    //console.log("Files received in multer:", req.files);
+     if (!req.files || !req.files.avatar || req.files.avatar.length === 0) {
+         throw new ApiError(400, "Avatar file is required");
+      }
     const avatarLocalPath = req.files?.avatar[0]?.path;
     //const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
@@ -74,7 +78,6 @@ const registerUser = asyncHandler( async (req, res) => {
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required")
     }
-
     const avatar = await uploadOnCloudinary(avatarLocalPath)
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
@@ -241,8 +244,8 @@ const refreshAcessToken=asyncHandler(async(req,res)=>{
 })
 
 const changeCurrentPassword = asyncHandler(async(req, res) => {
-    const {oldPassword, newPassword} = req.body
-
+   const {oldPassword, newPassword} = req.body
+   
     const user = await User.findById(req.user?._id)
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
@@ -378,7 +381,7 @@ const getUserChannelProfile=asyncHandler(async(req,res)=>{
                 localField:"_id",
                 foreignField:"channel",
                 as:"subscribers"
-            }
+            } 
         },
         {
             $lookup:{
