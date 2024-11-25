@@ -189,12 +189,12 @@ const logoutUser=asyncHandler(async(req,res)=>{
 
     return res
     .status(200)
-    .clearCookie("accessToken", options)    //storing tokens in cookie
+    .clearCookie("accessToken", options)    //removing stored tokens in cookie
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User logged Out"))
 })
 
-const refreshAcessToken=asyncHandler(async(req,res)=>{
+const refreshAcessToken=asyncHandler(async(req,res)=>{//code to generate newrefresh token and verification after access expires
     const incomingRefreshToken=req.cookies.       //token coming from client req 
     refreshToken || req.body.refreshToken
 

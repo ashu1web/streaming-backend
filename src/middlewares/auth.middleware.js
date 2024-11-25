@@ -35,4 +35,9 @@ If the token is valid, the user is granted access to the data. When the access t
 the client uses the refresh token (stored securely on the client side) to request a new access token without requiring the user to log in again."
 
 Cookies are a common and secure way to store both access tokens and refresh tokens, 
-provided the proper security flags (HttpOnly, Secure, SameSite) are used.*/
+provided the proper security flags (HttpOnly, Secure, SameSite) are used.
+
+
+Purpose: The refresh token is used to obtain a new access token when the current one expires.
+ It allows the user to stay authenticated without needing to log in again.
+*/
