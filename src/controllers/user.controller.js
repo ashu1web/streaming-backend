@@ -286,7 +286,7 @@ const updateAccountDetails = asyncHandler(async(req, res) => {
                 email: email
             }
         },
-        {new: true}
+        {new: true}                                    //To return the updated document to the db
         
     ).select("-password")
 
@@ -530,35 +530,34 @@ Output of channel
 /*
 output for user
 [
-  {
-    "_id": "user123",
+{
+    "_id": "user_id_here",
+    "username": "user_username",
+    "email": "user_email@example.com",
+    "fullName": "User Full Name",
+    "avatar": "cloudinary_url_here",
+    "coverImage": "cloudinary_url_here",
     "watchHistory": [
-      {
-        "_id": "64f5a3c41234567890abcdef",
-        "title": "Learning MongoDB",
-        "description": "A guide to MongoDB basics",
-        "thumbnail": "mongo-thumbnail.jpg",
-        "owner": {
-          "fullName": "John Doe",
-          "username": "johndoe",
-          "avatar": "avatar-john.jpg"
-        }
-      },
-      {
-        "_id": "64f5a3c51234567890abcdef",
-        "title": "React Tutorial",
-        "description": "Learn React step by step",
-        "thumbnail": "react-thumbnail.jpg",
-        "owner": {
-          "fullName": "Jane Smith",
-          "username": "janesmith",
-          "avatar": "avatar-jane.jpg"
-        }
-      }
-    ]
-  }
+        {
+            "_id": "video_id_here",
+            "title": "Video Title",
+            "description": "Video Description",
+            "url": "video_url_here",
+            "owner": {
+                "_id": "owner_id_here",
+                "fullName": "Owner Full Name",
+                "username": "owner_username",
+                "avatar": "owner_avatar_url_here"
+            }
+        },
+        ...
+    ],
+    "password": "hashed_password",
+    "refreshToken": "refresh_token_here",
+    "createdAt": "timestamp_here",
+    "updatedAt": "timestamp_here"
+}
 ]
-
 
 
 output for user[0].watchhistory

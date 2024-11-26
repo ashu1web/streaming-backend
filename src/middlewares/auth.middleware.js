@@ -27,6 +27,13 @@ export const verifyJWT = asyncHandler(async(req, _, next) => {
     
 })
 
+/*
+use of req.user=user
+Attaching the authenticated user to the request: 
+This allows subsequent middleware or route handlers to access the authenticated user's details (like their ID, email, or roles),
+directly via req.user without needing to decode the token or query the database again.
+*/
+
 
 /*"JWT is used to generate an access token.
 The private/secret key is stored securely on the server and is used to sign the access token.
