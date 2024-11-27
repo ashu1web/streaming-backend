@@ -81,24 +81,81 @@ const getUserTweets = asyncHandler(async (req, res) => {
         }
     ]);
 
-    // If no tweets found for the user
+  
     if (!userTweets.length) {
         throw new ApiError(404, "No tweets found for this user");
     }
 
-    // Return the user tweets
+    
     return res.status(200).json(new ApiResponse(200, userTweets, "User tweets fetched successfully"));
 });
 
 
-
 const updateTweet = asyncHandler(async (req, res) => {
-    //TODO: update tweet
+   
+   
+    const {tweetId}=req.params;
+   
+    const {content}=req.body;
+    if(!tweetId){
+        throw new ApiError(400,"TweetId is required")
+    }
+
+    if(!isValidObjectId(tweetId)){
+        throw new ApiError(400,"InValid TweetId")
+    }
+    if (!content) {
+        throw new ApiError(400, "Content is required");
+    }
+
+    const updatedtweet=await Tweet.findByIdAndUpdate(
+        tweetId,
+        {
+            $set: {
+               content:content
+            }
+        },
+        {
+            new:true,
+        }
+    )
+
+    if (!updatedtweet) {
+        throw new ApiError(404, "Tweet not found");
+    }
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, updatedtweet, "Tweet details updated successfully"))
+
 })
 
 const deleteTweet = asyncHandler(async (req, res) => {
-    //TODO: delete tweet
-})
+    const { tweetId } = req.params; 
+   
+    if (!tweetId) {
+        throw new ApiError(400, "TweetId is required");
+    }
+
+   
+    if (!isValidObjectId(tweetId)) {
+        throw new ApiError(400, "Invalid TweetId");
+    }
+ 
+    const deletedTweet = await Tweet.findByIdAndDelete(tweetId);
+
+   
+    console.log(deletedTweet);
+
+  
+    if (!deletedTweet) {
+        throw new ApiError(404, "Tweet not found");
+    }
+
+    
+    return res.status(200).json(new ApiResponse(200, deletedTweet, "Tweet deleted successfully"));
+});
+
 
 export {
     createTweet,
