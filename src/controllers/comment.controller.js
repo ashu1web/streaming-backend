@@ -9,6 +9,81 @@ const getVideoComments = asyncHandler(async (req, res) => {
     const {videoId} = req.params
     const {page = 1, limit = 10} = req.query
 
+
+      // Convert page and limit to integers
+      const pageNumber = parseInt(page, 10);
+      const pageLimit = parseInt(limit, 10);
+  
+      // Calculate the skip value for pagination
+      const skip = (pageNumber - 1) * pageLimit;
+  
+      try {
+        
+          const comments = await Comment.aggregate([
+              {
+                  $match: {
+                      video: mongoose.Types.ObjectId(videoId) 
+                  }
+              },
+              {
+                  $lookup: {
+                      from: "users", 
+                      localField: "owner", 
+                      foreignField: "_id", 
+                      as: "ownerDetails" 
+                  }
+              },
+              {
+                  $unwind: "$ownerDetails" 
+              },
+              {
+                  $project: {
+                      _id: 1,
+                      content: 1,
+                      createdAt: 1,
+                      "ownerDetails.username": 1,
+                      "ownerDetails.avatar": 1 
+                  }
+              },
+              {
+                  $skip: skip 
+              },
+              {
+                  $limit: pageLimit 
+              },
+              {
+                  $sort: { createdAt: -1 } 
+              }
+          ]);
+  
+          
+          const totalComments = await Comment.countDocuments({ video: videoId });
+  
+          
+          if (!comments.length) {
+              throw new ApiError(404, "No comments found for this video");
+          }
+  
+          
+          res.status(200).json(
+              new ApiResponse(200, {
+                  comments,
+                  totalComments,
+                  totalPages: Math.ceil(totalComments / pageLimit),
+                  currentPage: pageNumber,
+              }, "Comments retrieved successfully")
+          );
+      } catch (error) {
+         
+          if (error instanceof ApiError) {
+              return res.status(error.statusCode).json(error);
+          }
+         
+          return res.status(500).json(
+              new ApiError(500, "Failed to retrieve comments", [], error.stack)
+          );
+      }
+    
 })
 
 const addComment = asyncHandler(async (req, res) => {
