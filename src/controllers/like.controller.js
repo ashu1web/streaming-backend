@@ -175,8 +175,61 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 
 
 const getLikedVideos = asyncHandler(async (req, res) => {
-    //TODO: get all liked videos
-    
+   
+    try {
+      
+        const userId = req.user.id;
+
+       
+        const likedVideos = await Like.aggregate([
+            {
+                $match: {
+                    likedBy: userId, 
+                    video: { $exists: true }
+                }
+            },
+            {
+                $lookup: {
+                    from: "videos", // Name of the collection (Video model)
+                    localField: "video", // Field in `Like` model to match
+                    foreignField: "_id", // Field in `Video` model to match
+                    as: "videoDetails" // The result will be an array, so we alias it to `videoDetails`
+                }
+            },
+            {
+                $unwind: "$videoDetails" // Unwind the array so we can get the actual video object
+            },
+            {
+                $project: {
+                    _id: 1,
+                    video: "$videoDetails", 
+                    likedBy: 1, 
+                    createdAt: 1,
+                    updatedAt: 1 
+                }
+            }
+        ]);
+
+        // Check if there are liked videos
+        if (!likedVideos.length) {
+            throw new ApiError(404, "No liked videos found for this user");
+        }
+
+        // Format and send the response
+        res.status(200).json(
+            new ApiResponse(200, likedVideos, "Liked videos retrieved successfully")
+        );
+    } catch (error) {
+        // Handle errors with ApiError or unexpected issues
+        if (error instanceof ApiError) {
+            return res.status(error.statusCode).json(error);
+        }
+
+        // Unexpected errors
+        return res.status(500).json(
+            new ApiError(500, "Failed to retrieve liked videos", [], error.stack)
+        );
+    }
 })
 
 export {
