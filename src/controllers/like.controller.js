@@ -1,10 +1,10 @@
 import mongoose, {isValidObjectId} from "mongoose"
 import {Like} from "../models/like.model.js"
-import {Video} from "../models/video.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 
+//this function is toggle a like while video
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
     const userId = req.user?._id;
@@ -68,6 +68,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 });
 
 
+//this function is toggle a like while comment
 const toggleCommentLike = asyncHandler(async (req, res) => {
     const { commentId } = req.params;
     const userId = req.user?._id;
@@ -126,6 +127,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
 });
 
 
+//this function is toggle a like while comment
 const toggleTweetLike = asyncHandler(async (req, res) => {
     const { tweetId } = req.params;
     const { userId } = req.body;
@@ -174,67 +176,181 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 });
 
 
+//this is function is get likes while videos
 const getLikedVideos = asyncHandler(async (req, res) => {
-   
-    try {
-      
-        const userId = req.user.id;
+    const {
+        page = 1,                 //Pagination divide the data into small data
+        limit = 10,
+    } = req.query;
 
-       
-        const likedVideos = await Like.aggregate([
-            {
-                $match: {
-                    likedBy: userId, 
-                    video: { $exists: true }
-                }
-            },
-            {
-                $lookup: {
-                    from: "videos", // Name of the collection (Video model)
-                    localField: "video", // Field in `Like` model to match
-                    foreignField: "_id", // Field in `Video` model to match
-                    as: "videoDetails" // The result will be an array, so we alias it to `videoDetails`
-                }
-            },
-            {
-                $unwind: "$videoDetails" // Unwind the array so we can get the actual video object
-            },
-            {
-                $project: {
-                    _id: 1,
-                    video: "$videoDetails", 
-                    likedBy: 1, 
-                    createdAt: 1,
-                    updatedAt: 1 
+    const likedVideo = await Like.aggregate([
+        {
+            $match: {
+                likedBy: new mongoose.Types.ObjectId(req.user?._id),       //req.user._id saved during middleware
+            }
+        },
+        {
+            $lookup: {
+                from: 'videos',
+                localField: 'video',
+                foreignField: '_id',
+                as: 'video',
+                pipeline: [
+                    {
+                        $match: { isPublished: true },
+                    },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'owner',
+                            foreignField: '_id',
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1,
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            owner: {
+                                $first: "$owner"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                video: {
+                    $first: "$video"
                 }
             }
-        ]);
-
-        // Check if there are liked videos
-        if (!likedVideos.length) {
-            throw new ApiError(404, "No liked videos found for this user");
+        },
+        {
+            $match: {
+                video: { $exists: true },     // Only videos are return which exists
+            }
+        },
+        {
+            $sort: { createdAt: -1 }
+        },
+        {
+            $skip: (page - 1) * limit,      //Page 1: (1 - 1) * 10 = 0 → Skip 0 results (start from the first document).
+                                            //Page 2: (2 - 1) * 10 = 10 → Skip 10 results (start from the 11th document).
+        },                            
+        {
+            $limit: parseInt(limit),
         }
+    ]);
 
-        // Format and send the response
-        res.status(200).json(
-            new ApiResponse(200, likedVideos, "Liked videos retrieved successfully")
-        );
-    } catch (error) {
-        // Handle errors with ApiError or unexpected issues
-        if (error instanceof ApiError) {
-            return res.status(error.statusCode).json(error);
-        }
-
-        // Unexpected errors
-        return res.status(500).json(
-            new ApiError(500, "Failed to retrieve liked videos", [], error.stack)
-        );
+    if (!likedVideo) {
+        throw new ApiError(500, "Error while retrieved liked videos")
     }
-})
+
+    return res.status(200)
+        .json(new ApiResponse(200,
+            likedVideo,
+            "Liked video retrieved successfully"));
+});
+
 
 export {
+    getLikedVideos,
     toggleCommentLike,
-    toggleTweetLike,
-    toggleVideoLike,
-    getLikedVideos
-}
+    toggleTweetLike, 
+    toggleVideoLike
+};
+
+
+
+/*
+    Output
+    BEFORE-----> flatening owner and video 
+    [
+  {
+    "_id": "like1",
+    "likedBy": "user1",
+    "video": [
+      {
+        "_id": "video1",
+        "title": "Node.js Tutorial",
+        "owner": "user2",
+        "isPublished": true
+      }
+    ],
+    "owner": [
+      {
+        "fullName": "Alice Doe",
+        "username": "alice",
+        "avatar": "alice.jpg"
+      }
+    ],
+    "createdAt": "2025-02-28T10:00:00Z"
+  },
+  {
+    "_id": "like2",
+    "likedBy": "user1",
+    "video": [
+      {
+        "_id": "video2",
+        "title": "MongoDB Guide",
+        "owner": "user3",
+        "isPublished": true
+      }
+    ],
+    "owner": [
+      {
+        "fullName": "Bob Smith",
+        "username": "bob",
+        "avatar": "bob.jpg"
+      }
+    ],
+    "createdAt": "2025-02-28T11:00:00Z"
+  }
+]
+
+
+AFTER--->
+
+[
+  {
+    "_id": "like1",
+    "likedBy": "user1",
+    "video": {
+      "_id": "video1",
+      "title": "Node.js Tutorial",
+      "owner": {
+        "fullName": "Alice Doe",
+        "username": "alice",
+        "avatar": "alice.jpg"
+      },
+      "isPublished": true
+    },
+    "createdAt": "2025-02-28T10:00:00Z"
+  },
+  {
+    "_id": "like2",
+    "likedBy": "user1",
+    "video": {
+      "_id": "video2",
+      "title": "MongoDB Guide",
+      "owner": {
+        "fullName": "Bob Smith",
+        "username": "bob",
+        "avatar": "bob.jpg"
+      },
+      "isPublished": true
+    },
+    "createdAt": "2025-02-28T11:00:00Z"
+  }
+]
+
+
+*/

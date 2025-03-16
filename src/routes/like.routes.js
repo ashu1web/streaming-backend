@@ -2,8 +2,8 @@ import { Router } from 'express';
 import {
     getLikedVideos,
     toggleCommentLike,
+    toggleTweetLike, 
     toggleVideoLike,
-    toggleTweetLike,
 } from "../controllers/like.controller.js"
 import {verifyJWT} from "../middlewares/auth.middleware.js"
 

@@ -6,57 +6,51 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 
 
+
 const toggleSubscription = asyncHandler(async (req, res) => {
     const { channelId } = req.params;
-    // TODO: toggle subscription
-    if (!channelId || !isValidObjectId(channelId)) throw new ApiError(400, "Invalid Channel Link");
 
-  
-    const fetchedChannel = await User.findById(channelId);
-    if (!fetchedChannel) throw new ApiError(404, "Channel not found");
-  
-    const isSubscribedToChannel = await Subscription.findOne(
-      {
-        subscriber: req.user._id,
-        channel: channelId,
-      }
-    );
-    if (isSubscribedToChannel) {
-      await Subscription.findByIdAndDelete(isSubscribedToChannel._id);
-    } else {
-      const subscribeToChannel = await Subscription.create({
-        subscriber: req.user._id,
-        channel: new mongoose.Types.ObjectId(channelId),
-      });
-      if (!subscribeToChannel)
-        throw new ApiError(500, "Failed to subscribe to channel");
+    if (!channelId || !isValidObjectId(channelId)) {
+        throw new ApiError(400, "Invalid Channel Id");
     }
-  
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        { 
-          "Subscribed/Unsubscribed to/from channel: ": fetchedChannel.username
-        },
-        "Successfully subscribed/unsubscribed to channel"
-      )
-    );
 
-})
+    if (channelId.toString() !== req.user?._id.toString()) {
+        throw new ApiError(403, "Cannot subscribe your own channel");
+    }
+
+    const isSubscribed = await Subscription.findOne({
+        subscriber: req.user?._id,
+        channel: channelId,
+    });
+
+
+    if (isSubscribed) {
+        const unsubscribe = await Subscription.findByIdAndDelete(isSubscribed)
+
+        if (!unsubscribe) {
+            throw new ApiError(500, "Error while Unsubscrbing")
+        }
+    } else {
+        const subscribe = await Subscription.create({
+            subscriber: req.user?._id,
+            channel: channelId,
+        });
+
+        if (!subscribe) {
+            throw new ApiError(500, "Error while subscribing")
+        }
+    }
+
+    return res.status(200)
+        .json(new ApiResponse(200,
+            {},
+            "Subscription toggled successfully"));
+});
 
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
-    // console.log("Inside getUserChannelSubscribers Controller");
-
-    // console.log(req.params)
-
     const { channelId } = req.params;
    
-
-
-    //debug
-    // console.log(req.params)
-    // console.log("Channel Id:", channelId)
     console.log(channelId)
     if (!channelId || !isValidObjectId(channelId)) {
         throw new ApiError(400, "Invalid Channel Id");
@@ -120,10 +114,6 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 
 const getSubscribedChannels = asyncHandler(async (req, res) => {
     const { subscriberId } = req.params;
-
-    //debug
-    // console.log(req.params)
-    // console.log(subscriberId)
 
     if (!subscriberId || !isValidObjectId(subscriberId)) {
         throw new ApiError(400, "No valid subscriber Id found")
@@ -212,58 +202,31 @@ export {
     getSubscribedChannels
 }
 
+
+
 /*
-const getUserChannelSubscribers = asyncHandler(async (req, res) => {
-    const { channelId } = req.params;
-    if (!channelId) {
-        throw new ApiError(400, "ChannelId required");
-    }
-
-    if (!isValidObjectId(channelId)) {
-        throw new ApiError(400, "ChannelId is Invalid");
-    }
-
-    const channelinfo = await Subscription.aggregate([
-        {
-            $match: {
-                _id: new mongoose.Types.ObjectId(channelId), // Match against the given channelId
+subscribers output---->
+{
+    "statusCode": 200,
+    "data": {
+        "subscribers": [
+            {
+                "_id": "65f0987654321abcdef67890",
+                "username": "john_doe",
+                "avatar": "https://example.com/avatar1.jpg",
+                "fullName": "John Doe"
             },
-        },
-        {
-            $lookup: {
-                from: "users", 
-                localField: "subscriber", 
-                foreignField: "_id", 
-                as: "channelsubscribers", // Alias for the list of subscribers
-                pipeline: [
-                    {
-                        $lookup: {
-                            from: "subscriptions", // Lookup to find who each subscriber has subscribed to
-                            localField: "_id", // Match the current subscriber's _id field
-                            foreignField: "subscriber", // Find documents in subscriptions where this user is a subscriber
-                            as: "subscribersOfsubscriber", // Alias for the nested subscribers
-                        },
-                    },
-                    {
-                        $project: {
-                            username: 1,
-                            fullName: 1, 
-                            avatar: 1,
-                            subscribersCount: { $size: "$subscribersOfsubscriber" }, // Count how many people have subscribed to this user
-                        },
-                    },
-                ],
-            },
-        },
-    ]);
+            {
+                "_id": "65f087654321abcdef67891",
+                "username": "jane_doe",
+                "avatar": "https://example.com/avatar2.jpg",
+                "fullName": "Jane Doe"
+            }
+        ],
+        "subscriberCount": 2
+    },
+    "message": "Subscribers retrieved successfully"
+}
 
-    if (!channelinfo) {
-        throw new ApiError(400, "Channel does not exist");
-    }
-
-    return res.status(200).json(
-        new ApiResponse(200, channelinfo, "Channel subscriber info")
-    );
-});
 
 */

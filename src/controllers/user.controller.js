@@ -302,7 +302,7 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
         throw new ApiError(400, "Avatar file is missing")
     }
 
-    //TODO: delete old image - assignment
+    
 
     const avatar = await uploadOnCloudinary(avatarLocalPath)
 
@@ -335,7 +335,7 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
         throw new ApiError(400, "Cover image file is missing")
     }
 
-    //TODO: delete old image - assignment
+   
 
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
@@ -421,7 +421,7 @@ const getUserChannelProfile=asyncHandler(async(req,res)=>{
             }
         }
     ])
-
+    //console.log(channel)
     if(!channel?.length){
         throw new ApiError(404,"channel does not exists")
     }
@@ -509,20 +509,25 @@ export {
 /*
 Output of channel
 [
-    {
-        fullName: 'John Doe',
-        username: 'johndoe',
-        subscribersCount: 2,
-        subscribedTo: [
-            { channel: ObjectId("channel2"), subscriber: ObjectId("user1") },
-            { channel: ObjectId("channel3"), subscriber: ObjectId("user1") }
-        ],
-        email: 'johndoe@example.com',
-        coverImage: '/path/to/cover.jpg',
-        avatar: '/path/to/avatar.jpg',
-        issubcribed: true
-    }
+  {
+    fullName: "John Doe",
+    username: "johndoe",
+    email: "johndoe@example.com",
+    coverImage: "cover.jpg",
+    avatar: "avatar.jpg",
+    subscribers: [
+      { _id: "sub1", channel: "65d1abc", subscriber: "65d2def" },
+      { _id: "sub2", channel: "65d1abc", subscriber: "65d3ghi" }
+    ],
+    subscribersCount: 2,  // Count of users subscribed to 'johndoe'
+    subscribedTo: [
+      { _id: "sub3", channel: "65d4xyz", subscriber: "65d1abc" }
+    ],
+    channelsubcribed: 1,  // Count of channels 'johndoe' is subscribed to
+    issubcribed: false
+  }
 ]
+
 
 */
 

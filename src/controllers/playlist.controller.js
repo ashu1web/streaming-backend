@@ -6,7 +6,7 @@ import { User } from "../models/user.model.js";
 import { Video } from "../models/video.model.js"
 import { Playlist } from "../models/playlist.model.js"
 
-//this function use for create a playlist in dashboard
+//this function use for create a playlist 
 const createPlaylist = asyncHandler( async (req, res) => {
     const { name, description } = req.body;
     
@@ -82,107 +82,11 @@ const getUserPlaylist = asyncHandler(async (req, res) => {
 });
 
 
-//this function is used for get a playlist by there Id
-const getUserPlaylistById = asyncHandler(async(req, res) => {
-    const { playlistId } = req.params;
-
-    //debug
-    console.log("user playlist Id: ", playlistId)
-    
-    if (!playlistId || !isValidObjectId(playlistId)) {
-        throw new ApiError(404, "Playlist ID is invalid")
-    }
-
-    const fetchedPlaylist = await Playlist.aggregate([
-        {
-            $match: {
-                _id: new mongoose.Types.ObjectId(playlistId),
-            },
-        },
-        {
-            $lookup: {
-                from: "videos",
-                localField: "video",
-                foreignField: "_id",
-                as: "playlistVideos",
-            },
-        },
-        {
-            $unwind: {
-                path: "$playlistVideos",
-                preserveNullAndEmptyArrays: true,
-            },
-        },
-        {
-            $lookup: {
-                from: "users",
-                localField: "playlistVideos.owner",
-                foreignField: "_id",
-                as: "playlistVideos.videoOwner",
-            },
-        },
-        {
-            $unwind: {
-                path: "$playlistVideos.videoOwner",
-                preserveNullAndEmptyArrays: true,
-            },
-        },
-        {
-            $group: {
-                _id: "$_id",
-                name: { $first: "$name" },
-                description: { $first: "$description" },
-                owner: { $first: "$owner" },
-                createdAt: { $first: "$createdAt" },
-                updatedAt: { $first: "$updatedAt" },
-                playlistVideos: { $push: "$playlistVideos" },
-            },
-        },
-        {
-            $addFields: {
-                playlistVideoCount: { $size: "$playlistVideos" },
-            },
-        },
-        {
-            $project: {
-                _id: 1,
-                name: 1,
-                description: 1,
-                owner: 1,
-                createdAt: 1,
-                updatedAt: 1,
-                playlistVideos: {
-                    _id: 1,
-                    title: 1,
-                    owner: 1,
-                    "videoOwner.username": 1,
-                playlistVideoCount: 1,
-            },
-        },
-    }
-    ]);
-
-
-    
-    if (!fetchedPlaylist || !fetchedPlaylist.length === 0) {
-        throw new ApiError(400, "Playlist not found")
-    }
-
-    return res.status(200)
-    .json(new ApiResponse(200,
-        fetchedPlaylist[0],
-        "Playlist fetched successfully"));
-});
-
-
 //add video to playlist
 const addVideoToPlaylist = asyncHandler( async (req, res) => {
     const { playlistId, videoId} = req.params;
 
-    //debug
-    // console.log("video Id: ", videoId)
-    // console.log("playlist Id :", playlistId)
-
+   
     if (!playlistId || !videoId) {
         throw new ApiError(404, "Playlist Id and Video Id is missing")
     }
@@ -197,15 +101,15 @@ const addVideoToPlaylist = asyncHandler( async (req, res) => {
         throw new ApiError(404, "Requested videos are not found")
     }
 
-    if (!fetchedPlaylist.video) {
-        fetchedPlaylist.video = []
+    if (!fetchedPlaylist.videos) {
+        fetchedPlaylist.videos = []  || fetchedPlaylist.videos
     }
 
-    if (!fetchedPlaylist.video.includes(fetchedVideo._id.toString())) {
+    if (!fetchedPlaylist.videos.includes(fetchedVideo._id.toString())) {
         const videoAddedToPlaylist = await Playlist.findByIdAndUpdate(playlistId,
             {
                 $push: {
-                    video: fetchedVideo._id,
+                    videos: fetchedVideo._id,
                 },
             },
             {
@@ -224,16 +128,13 @@ const addVideoToPlaylist = asyncHandler( async (req, res) => {
     } else {
         throw new ApiError(400, "Video already exists in the playlist")
     }
-});
-
+    });
+    
 
 //delete video from playlist
 const removeVideoFromPlaylist = asyncHandler( async (req, res) => {
     const { playlistId, videoId} = req.params;
 
-    //debug
-    // console.log("video Id: ", videoId)
-    // console.log("playlist Id :", playlistId)
 
     //check-validation
     if (!playlistId || !isValidObjectId(playlistId)) {
@@ -248,32 +149,21 @@ const removeVideoFromPlaylist = asyncHandler( async (req, res) => {
         throw new ApiError(404, "Playlist not found")
     }
 
-    // Debug: Log the fetched playlist object to check its structure
-    // console.log("Fetched Playlist:", fetchedPlaylist);
-
-    if (!Array.isArray(fetchedPlaylist.video)) {
-        throw new ApiError(400, "Playlist videos field is not an array")
-    }
-
-    if (fetchedPlaylist.video.length === 0) {
+   
+    if (fetchedPlaylist.videos.length === 0) {
         throw new ApiError(400, "Playlist has no videos to remove was a empty")
     }
 
-    // this is use for debugging video is feteched or not from the playlist
-    // console.log(fetchedPlaylist.video)
 
-    //video uis present in playlist or not check
-    let isVideoPresent = fetchedPlaylist.video.some((video) => video.equals(videoId));
-
-    // this is use for debugging video is present or not
-    // console.log("Is video is present: ", isVideoPresent)
-
+    //video is present in playlist or not check
+    let isVideoPresent = fetchedPlaylist.videos.some((video) => video.equals(videoId));
+   
     if (!isVideoPresent) {
         throw new ApiError(404, "Video dose not exist in the playlist")
     }
 
     //here is the remove/delete video from the playlist
-    const videoRemovedFromPlaylist = await Playlist.findByIdAndDelete(playlistId,
+    const videoRemovedFromPlaylist = await Playlist.findByIdAndUpdate(playlistId,
         {
             $pull: {
                 videos: new mongoose.Types.ObjectId(videoId)
@@ -325,10 +215,7 @@ const updatePlaylist = asyncHandler(async(req, res) => {
     const { playlistId } = req.params;
     const { name, description } = req.body;
 
-    // //debug
-    // console.log("playlist Id:", req.params)
-    // console.log("User details: ", req.body)
-
+   
     if (!playlistId || !isValidObjectId(playlistId)) {
         throw new ApiError(400, "Invalid playlist Id")
     }
@@ -352,8 +239,6 @@ const updatePlaylist = asyncHandler(async(req, res) => {
         throw new ApiError(500, "Could not update the playlist")
     }
 
-    //debugging
-    // console.log("updated List: ", updatedPlaylist)
 
     return res.status(200)
     .json(new ApiResponse(200,
@@ -379,7 +264,7 @@ const getVideoPlaylist = asyncHandler( async (req, res) => {
             throw new ApiError(404, "Playlist not found")
         }
 
-    const videoExists = playlist.video.some((video) => video.equals(videoId));
+    const videoExists = playlist.videos.some((video) => video.equals(videoId));
     if (!videoExists) {
         throw new ApiError(404, "Video is found in playlist")
     }
@@ -401,7 +286,6 @@ const getVideoPlaylist = asyncHandler( async (req, res) => {
 export{
     createPlaylist,
     getUserPlaylist,
-    getUserPlaylistById,
     addVideoToPlaylist,
     removeVideoFromPlaylist,
     deletePlaylist,
