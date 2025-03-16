@@ -147,7 +147,7 @@ const loginUser = asyncHandler(async (req, res) => {
     const loggedUser = await User.findById(user._id).select("-password -refreshToken").lean();
 
     const options = {
-        httpOnly: true,
+        httpOnly: true, //now cookies are modiefiable through server only
         secure: true
     };
   
@@ -367,7 +367,7 @@ const getUserChannelProfile=asyncHandler(async(req,res)=>{
 
     if(!username?.trim()){
         throw new ApiError(400,"username is missing")
-    }
+    } 
 
     const channel=await User.aggregate([    //we have added two more fields in user document subscribers and subscribedTo
         {
