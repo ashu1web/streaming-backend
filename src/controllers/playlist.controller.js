@@ -39,9 +39,7 @@ const createPlaylist = asyncHandler( async (req, res) => {
 const getUserPlaylist = asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
-    // // Debug
-    // console.log('Request Params:', req.params);
-    // console.log("user Id:", userId)
+   
 
     if (!userId || !isValidObjectId(userId)) {
         throw new ApiError(404, "User not found")
@@ -166,7 +164,7 @@ const removeVideoFromPlaylist = asyncHandler( async (req, res) => {
     const videoRemovedFromPlaylist = await Playlist.findByIdAndUpdate(playlistId,
         {
             $pull: {
-                videos: new mongoose.Types.ObjectId(videoId)
+                videos: new mongoose.Types.ObjectId(videoId)  //to delete this video from videos array
             }
         },
         {

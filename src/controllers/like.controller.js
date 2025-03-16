@@ -3,15 +3,13 @@ import {Like} from "../models/like.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
+import { Video } from "../models/video.model.js"
 
-//this function is toggle a like while video
+//this function is toggle a like of a  video
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
     const userId = req.user?._id;
 
-    //debug
-    // console.log("toggleVideoLike:", videoId);
-    // console.log("toggleVideoLike:", userId);
 
     if (!videoId || !isValidObjectId(videoId)) {
         throw new ApiError(400, "Invalid video Id");
@@ -27,13 +25,11 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Video is not found")
     }
 
-    const isLiked = await Like.findOne({
+    const isLiked = await Like.findOne({       //The findOne() method in Mongoose (MongoDB) is used to find a single document
         video: videoId,
         likedBy: userId,
     });
 
-    //debug
-    // console.log("isLiked:", isLiked);
 
     if (isLiked) {
         const removedLike = await Like.findByIdAndDelete(isLiked?._id);
@@ -68,14 +64,11 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 });
 
 
-//this function is toggle a like while comment
+//this function is toggle a like of a comment
 const toggleCommentLike = asyncHandler(async (req, res) => {
     const { commentId } = req.params;
     const userId = req.user?._id;
 
-    //debug
-    // console.log("commentId:", commentId);
-    // console.log("userId:", userId);
 
     if (!commentId || !isValidObjectId(commentId)) {
         throw new ApiError(400, "No valid comment Id found");
@@ -91,8 +84,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
         likedBy: userId,
     });
 
-    //debug
-    // console.log("isLiked:", isLiked);
+   
 
     if (isLiked) {
         const removedLike = await Like.findByIdAndDelete(isLiked?._id);
@@ -112,8 +104,6 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
             likedBy: userId,
         });
 
-        //debug
-        // console.log("liked:", liked);
 
         if (!liked) {
             throw new ApiError(500, "Error while liking comment");
@@ -127,7 +117,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
 });
 
 
-//this function is toggle a like while comment
+//this function is toggle a like of a tweet 
 const toggleTweetLike = asyncHandler(async (req, res) => {
     const { tweetId } = req.params;
     const { userId } = req.body;
@@ -176,7 +166,7 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 });
 
 
-//this is function is get likes while videos
+//this is function is get likes of a  videos
 const getLikedVideos = asyncHandler(async (req, res) => {
     const {
         page = 1,                 //Pagination divide the data into small data
@@ -219,7 +209,7 @@ const getLikedVideos = asyncHandler(async (req, res) => {
                     {
                         $addFields: {
                             owner: {
-                                $first: "$owner"
+                                $first: "$owner" //the owner array changed to object
                             }
                         }
                     }

@@ -77,8 +77,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
         },
         {
             $unwind: {
-                path: "$subscriberDetails",
-                preserveNullAndEmptyArrays: true,
+                path: "$subscriberDetails",   //$unwind is used to deconstruct an array field, creating separate documents for each element in the array.
             }
         },
         {
@@ -112,94 +111,11 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
             "Subscribers retrieved successfully"));
 })
 
-const getSubscribedChannels = asyncHandler(async (req, res) => {
-    const { subscriberId } = req.params;
 
-    if (!subscriberId || !isValidObjectId(subscriberId)) {
-        throw new ApiError(400, "No valid subscriber Id found")
-    }
-
-    const subscribedChannels = await Subscription.aggregate([
-        {
-            $match: {
-                subscriber: new mongoose.Types.ObjectId(subscriberId),
-            }
-        },
-        {
-            $lookup: {
-                from: "users",
-                localField: "channel",
-                foreignField: "_id",
-                as: "channelDetails",
-            }
-        },
-        {
-            $unwind: "$channelDetails"
-        },
-        {
-            $lookup: {
-                from: "subscriptions",
-                localField: "channel",
-                foreignField: "channel",
-                as: "channelSubscribers"
-            }
-        },
-        {
-            $addFields: {
-                "channelDetails.isSubscribed": {
-                    $cond: {
-                        if: {
-                            $in: [
-                                new mongoose.Types.ObjectId(req.user?._id),
-                                "$channelSubscribers.subscriber",
-                            ]
-                        },
-                        then: true,
-                        else: false
-                    }
-                },
-                "channelDetails.subscribersCount": {
-                    $size: "$channelSubscribers",
-                },
-            }
-        },
-        {
-            $group: {
-                _id: null,
-                channels: { $push: "$channelDetails" },
-                totalChannels: { $sum: 1 }
-            }
-        },
-        {
-            $project: {
-                _id: 0,
-                channels: {
-                    _id: 1,
-                    isSubscribed: 1,
-                    subscriberCount: 1,
-                    username: 1,
-                    fullName: 1,
-                    avatar: 1,
-                },
-                channelsCount: "$totalChannels"
-            }
-        }
-    ]);
-
-    if (!subscribedChannels || subscribedChannels === 0) {
-        throw new ApiError(404, "Channels are not found")
-    }
-
-    return res.status(200)
-        .json(new ApiResponse(200,
-            subscribedChannels[0],
-            "Subscribed channel retrived successfully"));
-})
 
 export {
     toggleSubscription,
     getUserChannelSubscribers,
-    getSubscribedChannels
 }
 
 

@@ -23,7 +23,7 @@ const getVideoComment = asyncHandler(async (req, res) => {
             }
         },
         {
-            $sort: { createdAt: -1 }
+            $sort: { createdAt: -1 }      //to ensure newer comments come first
         },
         {
             $skip: (page - 1) * limit
@@ -107,16 +107,12 @@ const updateComments = asyncHandler(async (req, res) => {
     const { content } = req.body
     const { commentId } = req.params;
 
-    // //debug
-    // console.log(content)
-    // console.log(commentId)
-    
+  
     if (!content || !content.trim()) {
         throw new ApiError(400, "Comment not be empty")
     }
 
-    //debugging
-    // console.log("check content:", content)
+   
 
     if (!commentId || !isValidObjectId(commentId)) {
         throw new ApiError(400, "Invalid comment Id")
@@ -124,8 +120,6 @@ const updateComments = asyncHandler(async (req, res) => {
 
     const comment = await Comment.findById(commentId);
 
-    //debug
-    // console.log("Fetched comment:", comment)
 
     if (!comment) {
         throw new ApiError(500, "Comment not found")
