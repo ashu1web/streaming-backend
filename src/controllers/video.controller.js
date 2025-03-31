@@ -5,15 +5,9 @@ import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { uploadOnCloud } from "../utils/fileUpload.js";
-import { unlinkPath } from "../utils/UnlinkPath.js";
+import { uploadOnCloudinary} from "../utils/cloudinary.js";
 
-// function unlinkPath(videoLocalPath, thumbnailLocalPath) {
-//     if (videoLocalPath)
-//         fs.unlinkSync(videoLocalPath);
-//     if (thumbnailLocalPath)
-//         fs.unlinkSync(thumbnailLocalPath);
-// }
+
 
 //function retrives indiviual videos fron a db
 const  getVideoById = asyncHandler(async (req, res) => {
